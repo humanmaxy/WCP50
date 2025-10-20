@@ -6,6 +6,15 @@
 #include <NvInfer.h>
 #include "macros.h"
 
+// CUDA error checking macro
+#define CUDA_CHECK(status) \
+    do { \
+        auto ret = (status); \
+        if (ret != 0) { \
+            std::cerr << "Cuda failure: " << cudaGetErrorString(ret) << " at line " << __LINE__ << " in file " << __FILE__ << std::endl; \
+        } \
+    } while (0)
+
 namespace Yolo
 {
     static constexpr int CHECK_COUNT = 3;
@@ -90,6 +99,14 @@ namespace nvinfer1
 
     private:
         void forwardGpu(const float* const* inputs, float *output, cudaStream_t stream, int batchSize = 1);
+        
+        // Helper template functions for serialization
+        template<typename T>
+        void write(char*& buffer, const T& val) const;
+        
+        template<typename T>
+        T read(const char*& buffer);
+        
         int mThreadCount = 256;
         const char* mPluginNamespace;
         int mKernelCount;
@@ -134,7 +151,14 @@ namespace nvinfer1
         static PluginFieldCollection mFC;
         static std::vector<PluginField> mPluginAttributes;
     };
-    REGISTER_TENSORRT_PLUGIN(YoloPluginCreator);
 };
+
+// Forward declaration for plugin registration
+template<typename T>
+class PluginRegistrar;
+
+} // namespace nvinfer1
+
+// Plugin registration will be handled in plugin_registry.cpp
 
 #endif  // _YOLO_LAYER_H
